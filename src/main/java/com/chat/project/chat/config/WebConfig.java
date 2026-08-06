@@ -1,6 +1,8 @@
 package com.chat.project.chat.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -14,10 +16,9 @@ public class WebConfig implements WebMvcConfigurer {
     private final List<String> allowedOrigins;
     private final String uploadPath;
 
-    public WebConfig(@Value("${webchat.cors.allowed-origins}") List<String> allowedOrigins,
+    public WebConfig(WebChatProperties properties,
                      @Value("${webchat.upload.path}") String uploadPath) {
-        // 过滤掉空字符串（FRONTEND_URL 未设置时产生的空值）
-        this.allowedOrigins = allowedOrigins.stream()
+        this.allowedOrigins = properties.getCors().getAllowedOrigins().stream()
                 .filter(s -> s != null && !s.isBlank())
                 .toList();
         this.uploadPath = uploadPath;
