@@ -48,4 +48,3 @@ webchat:
       - http://localhost:4173
       - https://*.pages.dev
       - https://*.onrender.com
-      - ${FRONTEND_URL:}
