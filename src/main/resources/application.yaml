@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: webchat
+
+  datasource:
+    url: jdbc:sqlite:${DB_PATH:/data/webchat.db}?journal_mode=WAL&busy_timeout=5000&synchronous=NORMAL
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 25MB
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+webchat:
+  jwt:
+    secret: ${JWT_SECRET:webchat-secret-key-please-change-in-production-min-256-bits-long}
+    access-token-expiry: 86400000
+    refresh-token-expiry: 2592000000
+
+  upload:
+    path: ${UPLOAD_PATH:/data/uploads}
+
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+      - http://localhost:4173
+      - https://*.pages.dev
+      - https://*.onrender.com
+      - ${FRONTEND_URL:}

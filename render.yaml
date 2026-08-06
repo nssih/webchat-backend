@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: webchat-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: singapore
+    plan: free
+
+    healthCheckPath: /actuator/health
+
+    disk:
+      name: webchat-data
+      mountPath: /data
+      sizeGB: 1
+
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: ""
+      - key: DB_PATH
+        value: /data/webchat.db
+      - key: UPLOAD_PATH
+        value: /data/uploads

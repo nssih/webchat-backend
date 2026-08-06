@@ -1,0 +1,43 @@
+HELP.md
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# 数据库和上传文件（本地运行产生，不入库）
+*.db
+*.db-wal
+*.db-shm
+uploads/
+/data/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### macOS ###
+.DS_Store
+._*
