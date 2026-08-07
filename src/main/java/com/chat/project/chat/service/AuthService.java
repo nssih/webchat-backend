@@ -7,6 +7,7 @@ import com.chat.project.chat.dto.response.AuthResponse;
 import com.chat.project.chat.dto.response.UserResponse;
 import com.chat.project.chat.entity.DeviceToken;
 import com.chat.project.chat.entity.User;
+import com.chat.project.chat.exception.AuthException;
 import com.chat.project.chat.exception.BusinessException;
 import com.chat.project.chat.repository.DeviceTokenRepository;
 import com.chat.project.chat.repository.UserRepository;
@@ -49,7 +50,7 @@ public class AuthService {
             throw new BusinessException("两次密码不一致");
         }
         if (userRepository.existsByUsername(req.getUsername())) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException("用户名已被使用");
         }
         User user = new User();
         user.setUid(generateUniqueUid());
@@ -64,9 +65,9 @@ public class AuthService {
     public AuthResponse login(LoginRequest req) {
         User user = userRepository.findByUsername(req.getLogin())
                 .or(() -> userRepository.findByUid(req.getLogin()))
-                .orElseThrow(() -> new BusinessException("用户名或密码错误"));
+                .orElseThrow(() -> new AuthException("用户名或密码错误"));
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
-            throw new BusinessException("用户名或密码错误");
+            throw new AuthException("用户名或密码错误");
         }
         return issueTokens(user, req.getDeviceName(), req.getDeviceId());
     }
@@ -74,18 +75,27 @@ public class AuthService {
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest req) {
         DeviceToken dt = deviceTokenRepository.findByRefreshToken(req.getRefreshToken())
-                .orElseThrow(() -> new BusinessException("无效的 refresh token"));
+                .orElseThrow(() -> new AuthException("登录已失效，请重新登录"));
         if (dt.getExpiresAt().isBefore(Instant.now())) {
             deviceTokenRepository.delete(dt);
-            throw new BusinessException("refresh token 已过期，请重新登录");
+            throw new AuthException("登录已过期，请重新登录");
         }
         User user = dt.getUser();
+        // Token rotation：生成新的 access + refresh，删除旧记录
         String newAccess = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
-        dt.setLastUsedAt(Instant.now());
-        deviceTokenRepository.save(dt);
+        String newRefresh = jwtUtil.generateRefreshToken(user.getId());
+        deviceTokenRepository.delete(dt);
+        DeviceToken newDt = new DeviceToken();
+        newDt.setUser(user);
+        newDt.setRefreshToken(newRefresh);
+        newDt.setDeviceName(dt.getDeviceName());
+        newDt.setDeviceId(dt.getDeviceId());
+        newDt.setExpiresAt(Instant.now().plusMillis(refreshTokenExpiry));
+        newDt.setLastUsedAt(Instant.now());
+        deviceTokenRepository.save(newDt);
         return AuthResponse.builder()
                 .accessToken(newAccess)
-                .refreshToken(dt.getRefreshToken())
+                .refreshToken(newRefresh)
                 .user(UserResponse.from(user))
                 .build();
     }

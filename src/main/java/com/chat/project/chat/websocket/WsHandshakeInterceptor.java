@@ -1,10 +1,10 @@
 package com.chat.project.chat.websocket;
 
-import com.chat.project.chat.entity.User;
 import com.chat.project.chat.repository.UserRepository;
 import com.chat.project.chat.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -20,11 +20,9 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
     private static final Logger log = LoggerFactory.getLogger(WsHandshakeInterceptor.class);
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
 
-    public WsHandshakeInterceptor(JwtUtil jwtUtil, UserRepository userRepository) {
+    public WsHandshakeInterceptor(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
     }
 
     @Override
@@ -36,18 +34,18 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
         }
         if (token == null || !jwtUtil.isValid(token) || !jwtUtil.isAccessToken(token)) {
             log.warn("WebSocket 握手失败: token 无效");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
         Long userId = jwtUtil.getUserId(token);
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            log.warn("WebSocket 握手失败: 用户不存在 {}", userId);
+        String username = jwtUtil.getUsername(token);
+        if (username == null) {
+            log.warn("WebSocket 握手失败: token 缺少 username claim");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
         attributes.put("userId", userId);
-        attributes.put("username", user.getUsername());
-        attributes.put("nickname", user.getNickname());
-        attributes.put("avatar", user.getAvatar());
+        attributes.put("username", username);
         return true;
     }
 

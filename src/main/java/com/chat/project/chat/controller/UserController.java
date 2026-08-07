@@ -1,6 +1,7 @@
 package com.chat.project.chat.controller;
 
 import com.chat.project.chat.dto.request.UpdateProfileRequest;
+import com.chat.project.chat.dto.request.UpdatePublicKeyRequest;
 import com.chat.project.chat.dto.response.ApiResponse;
 import com.chat.project.chat.dto.response.UserResponse;
 import com.chat.project.chat.security.UserPrincipal;
@@ -35,11 +36,32 @@ public class UserController {
 
     @GetMapping("/search")
     public ApiResponse<List<UserResponse>> search(@RequestParam String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return ApiResponse.ok(List.of());
+        }
         return ApiResponse.ok(userService.search(keyword));
+    }
+
+    @GetMapping("/online")
+    public ApiResponse<List<UserResponse>> online(@AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(userService.getOnlineUsers(principal.getUsername()));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<UserResponse> getUser(@PathVariable Long id) {
         return ApiResponse.ok(userService.getById(id));
+    }
+
+    @PutMapping("/me/public-key")
+    public ApiResponse<Void> updatePublicKey(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdatePublicKeyRequest req) {
+        userService.updatePublicKey(principal.getId(), req);
+        return ApiResponse.ok(null);
+    }
+
+    @GetMapping("/by-username/{username}")
+    public ApiResponse<UserResponse> getByUsername(@PathVariable String username) {
+        return ApiResponse.ok(userService.getByUsername(username));
     }
 }

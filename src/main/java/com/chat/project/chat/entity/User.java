@@ -31,6 +31,9 @@ public class User {
     @Column(length = 500)
     private String avatar;
 
+    @Column(columnDefinition = "TEXT")
+    private String publicKey;
+
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
@@ -53,6 +56,8 @@ public class User {
     public void setNickname(String nickname) { this.nickname = nickname; }
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
+    public String getPublicKey() { return publicKey; }
+    public void setPublicKey(String publicKey) { this.publicKey = publicKey; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public List<DeviceToken> getDeviceTokens() { return deviceTokens; }

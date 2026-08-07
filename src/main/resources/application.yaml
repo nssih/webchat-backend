@@ -11,15 +11,14 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
+    open-in-view: false
     properties:
       hibernate:
         format_sql: false
 
   servlet:
     multipart:
-      enabled: true
-      max-file-size: 20MB
-      max-request-size: 25MB
+      enabled: false
 
 server:
   port: ${PORT:8080}

@@ -10,6 +10,7 @@ public class UserResponse {
     private String username;
     private String nickname;
     private String avatar;
+    private String publicKey;
     private Instant createdAt;
 
     private UserResponse() {}
@@ -20,6 +21,7 @@ public class UserResponse {
         this.username = b.username;
         this.nickname = b.nickname;
         this.avatar = b.avatar;
+        this.publicKey = b.publicKey;
         this.createdAt = b.createdAt;
     }
 
@@ -30,6 +32,7 @@ public class UserResponse {
                 .username(user.getUsername())
                 .nickname(user.getNickname())
                 .avatar(user.getAvatar())
+                .publicKey(user.getPublicKey())
                 .createdAt(user.getCreatedAt())
                 .build();
     }
@@ -41,6 +44,7 @@ public class UserResponse {
     public String getUsername() { return username; }
     public String getNickname() { return nickname; }
     public String getAvatar() { return avatar; }
+    public String getPublicKey() { return publicKey; }
     public Instant getCreatedAt() { return createdAt; }
 
     public static class Builder {
@@ -49,6 +53,7 @@ public class UserResponse {
         private String username;
         private String nickname;
         private String avatar;
+        private String publicKey;
         private Instant createdAt;
 
         public Builder id(Long v) { this.id = v; return this; }
@@ -56,6 +61,7 @@ public class UserResponse {
         public Builder username(String v) { this.username = v; return this; }
         public Builder nickname(String v) { this.nickname = v; return this; }
         public Builder avatar(String v) { this.avatar = v; return this; }
+        public Builder publicKey(String v) { this.publicKey = v; return this; }
         public Builder createdAt(Instant v) { this.createdAt = v; return this; }
         public UserResponse build() { return new UserResponse(this); }
     }
