@@ -29,12 +29,13 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 .setAllowedOriginPatterns("*");
     }
 
-    // 每个分片 64KB，AES-GCM 加密后约 88KB，Base64 后约 117KB，远小于此限制
+    // 每个分片 360KB，Base64 后约 493KB，远小于此限制（留 3% 余量给 JSON 框架）
+    // 增大 buffer 可支持更大分片，减少分片数，提升大文件传输速度
     @Bean
     public ServletServerContainerFactoryBean createWebSocketContainer() {
         ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-        container.setMaxTextMessageBufferSize(256 * 1024);          // 256KB，足够单片
-        container.setMaxBinaryMessageBufferSize(256 * 1024);
+        container.setMaxTextMessageBufferSize(512 * 1024);          // 512KB，足够单片 360KB×1.37≈493KB
+        container.setMaxBinaryMessageBufferSize(512 * 1024);
         container.setMaxSessionIdleTimeout(60 * 60 * 1000L);       // 1h idle timeout
         return container;
     }
