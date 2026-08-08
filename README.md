@@ -69,7 +69,8 @@ src/main/java/com/chat/project/chat/
 ├── ChatApplication.java        # 启动类（@EnableScheduling）
 ├── config/
 │   ├── SecurityConfig.java     # Spring Security 配置
-│   └── WebSocketConfig.java    # WebSocket 注册
+│   ├── WebSocketConfig.java    # WebSocket 注册（buffer 512KB）
+│   └── KeepaliveTask.java      # 每 10 分钟自检保活，防 Render 休眠
 ├── controller/
 │   ├── AuthController.java     # 注册/登录/刷新/退出
 │   ├── UserController.java     # 用户信息/公钥/在线列表
@@ -115,7 +116,8 @@ session 断开 → 触发 afterConnectionClosed → 广播 USER_OFFLINE
 
 关键约束：
 - 服务器不生成任何 ACK，只做转发
-- 最多同时 11 个并发传输（Semaphore 控制）
+- 同时最多 11 个并发传输（Semaphore 控制）
+- 分片大小 360KB，WebSocket buffer 512KB，Base64 加密后约 493KB
 - 接收方/发送方任一方断线，立即通知对方并释放资源
 
 ### 已读回执（MESSAGE_READ）
