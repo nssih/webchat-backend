@@ -59,7 +59,8 @@ public class OfflineMessage {
     private String replyToContent;
 
     // 记录类型："message"（默认）= 普通离线消息；"receipt" = 状态回执（toUsername 为发送方）
-    @Column(name = "msg_type", length = 20, nullable = false)
+    // nullable=true：允许旧行为 null，代码层把 null 当 "message" 处理，避免 ddl-auto:update 因 NOT NULL 约束失败
+    @Column(name = "msg_type", length = 20)
     private String msgType = "message";
 
     public OfflineMessage() {}
