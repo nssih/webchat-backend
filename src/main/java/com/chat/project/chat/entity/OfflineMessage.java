@@ -58,6 +58,10 @@ public class OfflineMessage {
     @Column(name = "reply_to_content", columnDefinition = "TEXT")
     private String replyToContent;
 
+    // 记录类型："message"（默认）= 普通离线消息；"receipt" = 状态回执（toUsername 为发送方）
+    @Column(name = "msg_type", length = 20, nullable = false)
+    private String msgType = "message";
+
     public OfflineMessage() {}
 
     public Long getId() { return id; }
@@ -87,4 +91,6 @@ public class OfflineMessage {
     public void setReplyToSender(String replyToSender) { this.replyToSender = replyToSender; }
     public String getReplyToContent() { return replyToContent; }
     public void setReplyToContent(String replyToContent) { this.replyToContent = replyToContent; }
+    public String getMsgType() { return msgType; }
+    public void setMsgType(String msgType) { this.msgType = msgType; }
 }

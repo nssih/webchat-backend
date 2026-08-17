@@ -128,6 +128,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                             .collect(Collectors.toMap(Group::getId, Group::getName));
 
             for (OfflineMessage om : pending) {
+                // receipt 类型：转为 MESSAGE_RECEIVED 发给发送方（即此处上线的用户）
+                if ("receipt".equals(om.getMsgType())) {
+                    sendToSession(session, WsMessage.builder()
+                            .type(WsMessage.Type.MESSAGE_RECEIVED)
+                            .messageId(om.getContent())   // content 字段存的是原消息 ID
+                            .fromUsername(om.getFromUsername())
+                            .timestamp(om.getTimestamp())
+                            .build());
+                    continue;
+                }
+                // 普通离线消息
                 String[] na = getNicknameAndAvatar(om.getFromUsername());
                 WsMessage.Builder builder = WsMessage.builder()
                         .type(WsMessage.Type.NEW_MESSAGE)
@@ -154,13 +165,32 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                             .replyToContent(om.getReplyToContent());
                 }
                 sendToSession(session, builder.build());
-                // 通知发送方（如在线）离线消息已送达接收方
-                sendToUsername(om.getFromUsername(), WsMessage.builder()
-                        .type(WsMessage.Type.CHAT_DELIVERY)
+                // 通知发送方离线消息已送达接收方：在线则直接发，不在线则存 receipt 等其上线再投递
+                WsMessage receivedReceipt = WsMessage.builder()
+                        .type(WsMessage.Type.MESSAGE_RECEIVED)
                         .messageId(om.getMessageId())
-                        .status("received")
+                        .fromUsername(username)
                         .timestamp(System.currentTimeMillis())
-                        .build());
+                        .build();
+                boolean senderOnline = sendToUsername(om.getFromUsername(), receivedReceipt);
+                if (!senderOnline && om.getGroupId() == null) {
+                    // 发送方不在线：持久化 receipt，等其上线时投递（仅私聊，群聊不补回执）
+                    if (!offlineMessageRepository.existsByMessageIdAndToUsername(
+                            om.getMessageId() + "_rcpt", om.getFromUsername())) {
+                        Instant receiptExpiry = Instant.now().plusSeconds(OFFLINE_TTL_HOURS * 3600);
+                        OfflineMessage receipt = new OfflineMessage();
+                        receipt.setMessageId(om.getMessageId() + "_rcpt");
+                        receipt.setFromUsername(username);
+                        receipt.setToUsername(om.getFromUsername());
+                        receipt.setContentType("receipt");
+                        receipt.setContent(om.getMessageId());
+                        receipt.setTimestamp(System.currentTimeMillis());
+                        receipt.setCreatedAt(Instant.now());
+                        receipt.setExpiresAt(receiptExpiry);
+                        receipt.setMsgType("receipt");
+                        offlineMessageRepository.save(receipt);
+                    }
+                }
             }
             log.info("已向用户 {} 投递 {} 条离线消息", username, pending.size());
         }
@@ -588,6 +618,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     // 接收方打开聊天页面时发来此消息；服务端验证后将已读回执转发给消息发送方
     // 私聊：验证 sender（toUsername）确实是已注册用户
     // 群聊：验证 reader 是群成员（通过 groupId 字段区分）
+    // 转发顺序：先发 MESSAGE_RECEIVED，再发 MESSAGE_READ，保证发送方状态依次升级，不跳级
     private void handleMessageRead(WebSocketSession session, WsMessage msg) {
         if (msg.getMessageId() == null) return;
         String readerUsername = getUsername(session);
@@ -607,11 +638,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
         }
 
+        long now = System.currentTimeMillis();
+        // 先发 MESSAGE_RECEIVED，再发 MESSAGE_READ，保证发送方状态严格按 sent→received→read 升级
+        sendToUsername(senderUsername, WsMessage.builder()
+                .type(WsMessage.Type.MESSAGE_RECEIVED)
+                .messageId(msg.getMessageId())
+                .fromUsername(readerUsername)
+                .timestamp(now)
+                .build());
         sendToUsername(senderUsername, WsMessage.builder()
                 .type(WsMessage.Type.MESSAGE_READ)
                 .messageId(msg.getMessageId())
                 .fromUsername(readerUsername)
-                .timestamp(System.currentTimeMillis())
+                .timestamp(now)
                 .build());
     }
 
@@ -717,12 +756,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         return s != null && !s.isEmpty();
     }
 
-    // 判断用户是否"活跃在线"：session 存在且 45 秒内有过心跳
-    // 用于消息发送路径，防止手机后台冻结导致消息假发送（session.isOpen() 为 true 但对方已无响应）
+    // 判断用户是否在线：session 存在即视为在线
+    // 心跳超时强制断连由定时任务负责，发消息路径不再用心跳时间二次判断（避免假离线）
     private boolean isActivelyOnline(String username) {
-        if (!isOnline(username)) return false;
-        Long last = lastPingTime.get(username);
-        return last != null && (System.currentTimeMillis() - last) <= 45_000L;
+        return isOnline(username);
     }
 
     public List<String> getOnlineUsernames() {
