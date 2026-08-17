@@ -1,0 +1,27 @@
+package com.chat.project.chat.repository;
+
+import com.chat.project.chat.entity.GroupMember;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
+
+    @Query("SELECT m FROM GroupMember m JOIN FETCH m.user WHERE m.group.id = :groupId")
+    List<GroupMember> findByGroupId(@Param("groupId") Long groupId);
+
+    @Query("SELECT m FROM GroupMember m JOIN FETCH m.user JOIN FETCH m.group WHERE m.group.id IN :groupIds")
+    List<GroupMember> findByGroupIdIn(@Param("groupIds") List<Long> groupIds);
+
+    Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);
+    boolean existsByGroupIdAndUserId(Long groupId, Long userId);
+    void deleteByGroupIdAndUserId(Long groupId, Long userId);
+
+    long countByGroupId(Long groupId);
+
+    @Query("SELECT COUNT(m) > 0 FROM GroupMember m WHERE m.group.id = :groupId AND m.user.username = :username")
+    boolean existsByGroupIdAndUsername(@Param("groupId") Long groupId, @Param("username") String username);
+}

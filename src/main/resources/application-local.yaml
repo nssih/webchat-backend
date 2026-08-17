@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:./webchat.db
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+
+# 本地开发/E2E 测试：注册限流放开（不影响登录、刷新的限流）
+webchat:
+  jwt:
+    # 本地开发专用密钥，生产环境必须通过 JWT_SECRET 环境变量覆盖
+    secret: local-dev-secret-key-please-change-in-production-use-openssl-rand-base64-64
+  rate-limit:
+    register-max: 1000
+    register-window-ms: 300000
+    login-max: 1000
+    login-window-ms: 60000
+  datasource:
+    # SQLite 单写者，连接池设 1 消除并发写锁竞争
+    pool-size: 1
+    # WAL 模式和超时通过 PRAGMA 初始化（SQLite JDBC URL 参数对这些不生效）
+    init-sql: "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000; PRAGMA synchronous=NORMAL"

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: webchat-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: singapore
+    plan: free
+
+    healthCheckPath: /actuator/health
+
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        value: ""
+      - key: SELF_URL
+        value: "https://your-backend.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://your-frontend.pages.dev"

@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: webchat
+
+  jackson:
+    default-property-inclusion: non_null
+
+  datasource:
+    url: ${DATABASE_URL:disabled}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: ${DB_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+
+  servlet:
+    multipart:
+      enabled: false
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+webchat:
+  jwt:
+    # 生产环境必须通过环境变量 JWT_SECRET 注入，不设置则启动失败
+    secret: ${JWT_SECRET:}
+    access-token-expiry: 900000
+    refresh-token-expiry: 2592000000
+
+  upload:
+    path: ${UPLOAD_PATH:/tmp/uploads}
+
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+      - http://localhost:4173
+      - http://localhost:5174
+
+  rate-limit:
+    register-max: 5
+    register-window-ms: 3600000
+    login-max: 10
+    login-window-ms: 60000
